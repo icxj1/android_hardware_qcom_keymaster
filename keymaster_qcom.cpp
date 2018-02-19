@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 
-#include <nativehelper/UniquePtr.h>
+#include <UniquePtr.h>
 #include <cutils/properties.h>
 
 #include "QSEEComAPI.h"
@@ -201,6 +201,7 @@ static int32_t qcom_km_ION_memalloc(struct qcom_km_ion_info_t *handle,
 {
     int32_t ret = 0;
     int32_t iret = 0;
+    int32_t fd = 0;
     unsigned char *v_addr;
     struct ion_allocation_data ion_alloc_data;
     int32_t ion_fd;
@@ -483,7 +484,7 @@ static int qcom_km_sign_data(const keymaster0_device_t* dev,
         return -1;
     }
     if (dataLength > KM_KEY_SIZE_MAX) {
-        ALOGE("Input data to be signed is too long %zu bytes", dataLength);
+        ALOGE("Input data to be signed is too long %d bytes", dataLength);
         return -1;
     }
     if (data == NULL) {
@@ -741,9 +742,7 @@ static int qcom_km_open(const hw_module_t* module, const char* name,
 {
     int ret = 0;
     unsigned int attempt_num = 0;
-#ifdef WAIT_FOR_QSEE
     char property_val[PROPERTY_VALUE_MAX] = {0};
-#endif
     qcom_keymaster_handle_t* km_handle;
     if (strcmp(name, KEYSTORE_KEYMASTER) != 0)
         return -EINVAL;
@@ -795,6 +794,10 @@ static int qcom_km_open(const hw_module_t* module, const char* name,
     if(ret)
         ret = (*km_handle->QSEECom_start_app)((struct QSEECom_handle **)&km_handle->qseecom,
                         "/firmware/image", "keymaste", KM_SB_LENGTH);
+    if(ret)
+        ret = (*km_handle->QSEECom_start_app)((struct QSEECom_handle **)&km_handle->qseecom,
+                        "/firmware/image", "skeymast", KM_SB_LENGTH);
+
     if (ret) {
         ALOGE("Loading keymaster app failed");
         free(km_handle);
